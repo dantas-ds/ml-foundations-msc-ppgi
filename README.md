@@ -33,8 +33,7 @@ uv sync
 
 ## 👨‍💻 Author
 **Lucas G. Dantas**  
-MSc Informatics – AI  (PPGI - UFPB)
-R&D Data Scientist @ Computer Vision | GenAI
+MSc Informatics – AI  (PPGI - UFPB) • R&D Data Scientist @ Computer Vision | GenAI
 
 ---
 © 2025 Lucas G. Dantas — All rights reserved.
