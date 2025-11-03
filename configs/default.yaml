@@ -59,9 +59,3 @@ algorithms:
     m: 2.0
     max_iter: 300
     error: 1e-5
-
-plot:
-  style: "seaborn-v0_8-colorblind"
-  figsize: [6, 4]
-  dpi: 120
-  color_palette: "tab10"

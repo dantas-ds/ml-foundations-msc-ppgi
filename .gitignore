@@ -1,10 +1,54 @@
+# ----------------------------------
+# Python cache and build artifacts
+# ----------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+*.log
+*.tmp
+*.bak
+*.old
+
+# ----------------------------------
+# Virtual environments and tools
+# ----------------------------------
 .venv/
+env/
+venv/
 uv.lock
 
-.vscode
+# ----------------------------------
+# Editor and IDE settings
+# ----------------------------------
+.vscode/
+.idea/
 
+# ----------------------------------
+# Temporary and test files
+# ----------------------------------
 temp.*
+*.swp
 
-__pycache__/
+# ----------------------------------
+# Jupyter notebooks
+# ----------------------------------
+.ipynb_checkpoints/
 
-*.egg-info/
+# ----------------------------------
+# Outputs and heavy artifacts
+# ----------------------------------
+# Keep CSV exports for inspection
+outputs/**/*.npz
+outputs/**/*.npy
+outputs/**/*.pkl
+outputs/**/*.pt
+outputs/**/*.ckpt
+outputs/**/*.h5
+
+# ----------------------------------
+# OS-specific files
+# ----------------------------------
+.DS_Store
+Thumbs.db
