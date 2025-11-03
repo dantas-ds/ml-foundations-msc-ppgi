@@ -1,0 +1,67 @@
+project:
+  name: "ML Assignments – PPGI - UFPB | 2025"
+  author: "Lucas Dantas"
+  seed: 42
+  output_dir: "outputs/"
+  data_dir: "data/"
+
+dataset:
+  generator: "bivariate_gaussian"
+
+  params:
+    n_class1: 150
+    n_class2: 150
+    mu1: [25.0, 10.0]
+    mu2: [60.0, 30.0]
+    var1: [100.0, 25.0]
+    var2: [36.0, 144.0]
+    random_state: 42
+
+  test_size: 0.25
+  shuffle: true
+  normalize: false
+
+model: # random parameters  for all models
+  random_state: 42
+  max_iter: 1000
+  n_jobs: -1
+
+algorithms:
+  knn:
+    n_neighbors: 5
+    weights: "distance"
+
+  svm:
+    kernel: "rbf"
+    C: 1.0
+    gamma: "scale"
+
+  tree:
+    criterion: "gini"
+    max_depth: 5
+
+  logreg:
+    penalty: "l2"
+    solver: "lbfgs"
+
+  mlp:
+    hidden_layer_sizes: [50, 30]
+    activation: "relu"
+    learning_rate_init: 0.001
+
+  kmeans:
+    n_clusters: 3
+    init: "k-means++"
+    n_init: 10
+
+  fcm:
+    n_clusters: 3
+    m: 2.0
+    max_iter: 300
+    error: 1e-5
+
+plot:
+  style: "seaborn-v0_8-colorblind"
+  figsize: [6, 4]
+  dpi: 120
+  color_palette: "tab10"

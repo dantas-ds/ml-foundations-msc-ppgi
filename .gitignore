@@ -1,0 +1,10 @@
+.venv/
+uv.lock
+
+.vscode
+
+temp.*
+
+__pycache__/
+
+*.egg-info/

@@ -1,0 +1,37 @@
+[project]
+name = "ml"
+version = "0.1.0"
+description = "ML Assignments – PPGI - UFPB | 2025"
+readme = "README.md"
+requires-python = ">=3.12"
+
+authors = [{ name = "Lucas Gomes Dantas" }]
+
+dependencies = [
+  "numpy>=1.26",
+  "jupyter>=1.0",
+  "plotly>=6.3.1",
+  "pandas>=2.3.3",
+]
+
+[project.scripts]
+
+ml-run = "ml.__main__:main" # comand = "module:function" | uv run ml-run
+
+[dependency-groups]
+dev = [
+  "ruff>=0.6.8",
+  "pytest>=8.0",
+  "mypy>=1.11"
+]
+
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
