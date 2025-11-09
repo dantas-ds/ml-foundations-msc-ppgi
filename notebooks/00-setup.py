@@ -1,5 +1,7 @@
 import sys
+
 from pathlib import Path
+from IPython import get_ipython
 
 
 ROOT = Path.cwd().parent if Path.cwd().name == "notebooks" else Path.cwd()
@@ -9,8 +11,6 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 try:
-    from IPython import get_ipython
-
     ipython = get_ipython()
 
     if ipython is not None:

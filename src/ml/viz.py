@@ -1,56 +1,132 @@
 import numpy as np
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
-def scatter(
+def scatter_data(
     X: np.ndarray,
     y: np.ndarray,
     *,
-    title: str = "Bivariate Scatter",
+    title: str = "Dataset Scatter",
     show_ellipses: bool = True,
-    opacity: float = 0.85,
+    alpha: float = 0.85,
+    figsize: tuple[int, int] = (7, 5),
+    save_path: str | None = None,
 ):
-    df = pd.DataFrame({"x": X[:, 0], "y": X[:, 1], "cls": y.astype(str)})
+    """
+    Scatter plot for labeled datasets with optional Gaussian ellipses.
+    """
 
-    fig = px.scatter(
-        df,
-        x="x",
-        y="y",
-        color="cls",
-        opacity=opacity,
-        title=title,
-        color_discrete_sequence=px.colors.qualitative.Set2,
-    )
+    classes = np.unique(y)
+    colors = plt.cm.Set2(np.linspace(0, 1, len(classes)))
 
-    if show_ellipses:
-        for cls in df["cls"].unique():
-            sub = df[df["cls"] == cls]
-            mx, my = sub["x"].mean(), sub["y"].mean()
-            sx, sy = sub["x"].std(), sub["y"].std()
+    fig, ax = plt.subplots(figsize=figsize)
+
+    for i, cls in enumerate(classes):
+        mask = y == cls
+        ax.scatter(X[mask, 0], X[mask, 1],
+                   s=40, alpha=alpha,
+                   color=colors[i],
+                   label=f"Class {cls}")
+
+        if show_ellipses:
+            mx, my = X[mask, 0].mean(), X[mask, 1].mean()
+            sx, sy = X[mask, 0].std(), X[mask, 1].std()
             t = np.linspace(0, 2 * np.pi, 200)
-
             xe = mx + sx * np.cos(t)
             ye = my + sy * np.sin(t)
+            ax.plot(xe, ye, color=colors[i], lw=2)
 
-            fig.add_trace(
-                go.Scatter(
-                    x=xe,
-                    y=ye,
-                    mode="lines",
-                    name=f"ellipse {cls}",
-                    line=dict(width=2),
-                    showlegend=False,
-                )
-            )
+    ax.set_title(title, fontsize=14, loc="left")
+    ax.set_xlabel("x₁")
+    ax.set_ylabel("x₂")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    plt.tight_layout()
 
-    fig.update_layout(
-        width=650,
-        height=500,
-        title_x=0.02,
-        title_font=dict(size=18),
-        legend_title_text="Class",
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    else:
+        plt.show()
+
+    return fig, ax
+
+
+def scatter_clusters(
+    X, y_pred, model, *,
+    title="K-means Clusters + Boundaries",
+    alpha=0.85, figsize=(7, 5), save_path=None
+):
+    clusters = np.unique(y_pred)
+    colors = plt.cm.tab10(np.linspace(0, 1, len(clusters)))
+
+    pad = 1.0
+
+    x_min, x_max = X[:, 0].min() - pad, X[:, 0].max() + pad
+    y_min, y_max = X[:, 1].min() - pad, X[:, 1].max() + pad
+
+    xx, yy = np.meshgrid(
+        np.linspace(x_min, x_max, 400),
+        np.linspace(y_min, y_max, 400),
     )
 
-    return fig
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.contourf(xx, yy, Z, alpha=0.15, levels=len(clusters), cmap=plt.cm.tab10)
+
+    for i, c in enumerate(clusters):
+        m = y_pred == c
+        ax.scatter(X[m, 0], X[m, 1], s=40, alpha=alpha, color=colors[i], label=f"Cluster {c}")
+
+    if hasattr(model, "cluster_centers_"):
+        C = model.cluster_centers_
+        ax.scatter(C[:, 0], C[:, 1], c="black", s=120, marker="x", linewidths=2, label="Centroids")
+
+    ax.set_title(title, fontsize=14, loc="left")
+    ax.set_xlabel("x₁")
+    ax.set_ylabel("x₂")
+
+    ax.legend()
+    ax.grid(alpha=0.3)
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    else:
+        plt.show()
+
+    return fig, ax
+
+
+def scatter_cm(cm: np.ndarray,
+               labels=None,
+               title="Confusion Matrix",
+               save_path=None):
+
+    """
+    Pretty confusion matrix visualization.
+    """
+
+    fig, ax = plt.subplots(figsize=(5, 4))
+    sns.heatmap(cm,
+                annot=True,
+                fmt="d",
+                cmap="Blues",
+                cbar=False,
+                xticklabels=labels or ["Class 0", "Class 1"],
+                yticklabels=labels or ["Class 0", "Class 1"],
+                ax=ax)
+
+    ax.set_title(title, fontsize=14, loc="left")
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("True")
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    else:
+        plt.show()
+
+    return fig, ax
