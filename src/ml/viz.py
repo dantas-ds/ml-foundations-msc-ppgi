@@ -130,3 +130,35 @@ def scatter_cm(cm: np.ndarray,
         plt.show()
 
     return fig, ax
+
+
+def scatter_fcm(
+    X: np.ndarray,
+    u_class1: np.ndarray,
+    *,
+    title: str = "Fuzzy membership to Class 1",
+    figsize: tuple[int, int] = (7, 5),
+    save_path: str | None = None,
+):
+    """
+    Color points by membership degree to class 1 (values in [0,1]).
+    """
+    u = np.clip(np.asarray(u_class1, dtype=float), 0.0, 1.0)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    sc = ax.scatter(X[:, 0], X[:, 1], c=u, s=40, cmap="viridis", vmin=0.0, vmax=1.0)
+    cb = plt.colorbar(sc, ax=ax, pad=0.02)
+    cb.set_label("membership of class 1")
+
+    ax.set_title(title, fontsize=14, loc="left")
+    ax.set_xlabel("x₁")
+    ax.set_ylabel("x₂")
+    ax.grid(alpha=0.3)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    else:
+        plt.show()
+
+    return fig, ax
