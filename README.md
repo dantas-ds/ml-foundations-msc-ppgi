@@ -44,16 +44,6 @@ uv sync
 >
 > - Train/Test split: `test_size = 0.20`, `random_state = 42`, `stratify = y`
 
-### 🌀 Unsupervised Models
-| Model | Notebook | Primary Metric(s) | Value |
-|:--|:--|:--|:--|
-| **K-means** | [kmeans.ipynb](./notebooks/10-kmeans.ipynb) | Adjusted Rand Index (ARI) | **0.9342** |
-| **FFuzzy C-Means** | [fcm.ipynb](./notebooks/11-fcm.ipynb) | Centers / Iterations | Centers ≈ `[[60.07, 30.89], [24.51, 9.80]]`; Iter = **15** |
-
-> *Notes:* K-means includes the confusion matrix and decision region visualization.  
-> FCM includes fuzzy membership heatmaps.
-
----
 
 ### ✅ Supervised Models
 | Model | Notebook | Accuracy | Precision | Recall | F1 |
@@ -65,6 +55,17 @@ uv sync
 | **Decision Tree** | [tree.ipynb](./notebooks/23-tree.ipynb) | **0.9500** | **0.9655** | **0.9333** | **0.9492** |
 
 > *Notes:* Metrics refer to the **test split (20%)**. Each notebook includes the confusion matrix and decision boundary visualization.
+
+---
+
+### 🌀 Unsupervised Models
+| Model | Notebook | Primary Metric(s) | Value |
+|:--|:--|:--|:--|
+| **K-means** | [kmeans.ipynb](./notebooks/10-kmeans.ipynb) | Adjusted Rand Index (ARI) | **0.9342** |
+| **FFuzzy C-Means** | [fcm.ipynb](./notebooks/11-fcm.ipynb) | Centers / Iterations | Centers ≈ `[[60.07, 30.89], [24.51, 9.80]]`; Iter = **15** |
+
+> *Notes:* K-means includes the confusion matrix and decision region visualization.  
+> FCM includes fuzzy membership heatmaps.
 
 ---
 
