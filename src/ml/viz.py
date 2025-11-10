@@ -95,13 +95,15 @@ def plt_dboundary(
     y: np.ndarray,
     *,
     title: str = "Decision Boundary",
-    figsize: Tuple[int, int] = (7, 5),
+    figsize: Tuple[int, int] = (6, 4),
     save_path: Optional[str] = None,
     cmap_continuous: str = "coolwarm",
     cmap_discrete: str = "Set3",
     ax: Optional[plt.Axes] = None,
 ):
 
+    plt.rcParams["font.family"] = "DejaVu Sans"
+    
     xx, yy, grid = _mesh_2d(X)
 
     fig = None
@@ -132,12 +134,15 @@ def plt_dboundary(
         ax.scatter(X[m, 0], X[m, 1], s=40, color=colors[i], label=f"Class {cls}")
 
     ax.set_title(title, fontsize=14, loc="left")
-    ax.set_xlabel("x₁"); ax.set_ylabel("x₂")
-    ax.legend(); ax.grid(alpha=0.3)
+    ax.set_xlabel("x₁")
+    ax.set_ylabel("x₂")
+    ax.legend()
+    ax.grid(alpha=0.3)
     plt.tight_layout()
 
     if save_path:
         (fig or ax.figure).savefig(save_path, dpi=300, bbox_inches="tight")
+
     elif fig is not None:
         plt.show()
 
@@ -152,7 +157,7 @@ def plt_clusters(
     y_true: Optional[np.ndarray] = None,
     title: str = "K-means (Clusters + Boundary)",
     alpha: float = 0.9,
-    figsize: Tuple[int, int] = (7, 5),
+    figsize: Tuple[int, int] = (6, 4),
     save_path: Optional[str] = None,
     ax: Optional[plt.Axes] = None,
 ):
@@ -241,7 +246,7 @@ def plt_cmatrix(
     labels: Optional[Iterable[str]] = None,
     normalize: Optional[str] = None,
     title: str = "Confusion Matrix",
-    figsize: Tuple[int, int] = (5, 4),
+    figsize: Tuple[int, int] = (4, 3),
     save_path: Optional[str] = None,
     ax: Optional[plt.Axes] = None,
 ):
@@ -297,42 +302,53 @@ def plt_dtree(
     feature_names=("x1", "x2"),
     class_names=("Class 0", "Class 1"),
     max_depth=None,
-    figsize=(10, 6),
-    dpi=120,
+    figsize=(5, 3),
+    dpi=160,
     filled=True,
     rounded=True,
     impurity=False,
+    proportion=True,
+    precision=2,
+    style="seaborn-v0_8-whitegrid",
+    title="• Decision Tree",
     save_path=None,
 ):
-    """
-    Visualize a sklearn DecisionTreeClassifier, handling Pipeline
-    transparently.
-    """
+
+    if style:
+        try:
+            plt.style.use(style)
+        except Exception:
+            pass
 
     est = getattr(model, "named_steps", None)
-    clf = est["tree"] if isinstance(est, dict) and "tree" in est else model
+    clf = est["tree"] if isinstance(est, dict) and "tree" in est else (
+        list(model.named_steps.values())[-1] if hasattr(model, "named_steps") else model
+    )
 
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+
     plot_tree(
         clf,
         feature_names=list(feature_names),
         class_names=list(class_names),
         max_depth=max_depth,
-        filled=filled,
+        filled=filled,       # usa o mapa de cores da árvore
         rounded=rounded,
         impurity=impurity,
-        fontsize=10,
+        proportion=proportion,
+        precision=precision,
+        fontsize=5,
         ax=ax,
     )
 
-    ax.set_title("> Decision Tree", loc="left", fontsize=14)
-    plt.tight_layout()
+    ax.set_axis_off()
+    ax.set_title(title, loc="left", fontsize=7, pad=8)
+    fig.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
+        fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
     else:
         plt.show()
-
     return fig, ax
 
 
