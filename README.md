@@ -47,8 +47,8 @@ uv sync
 ### 🌀 Unsupervised Models
 | Model | Notebook | Primary Metric(s) | Value |
 |:--|:--|:--|:--|
-| ⭐️ **K-means** | [kmeans.ipynb](./notebooks/10-kmeans.ipynb) | Adjusted Rand Index (ARI) | **0.9342** |
-| **FCM (Fuzzy C-Means)** | [fcm.ipynb](./notebooks/11-fcm.ipynb) | Centers / Iterations | Centers ≈ `[[60.07, 30.89], [24.51, 9.80]]`; Iter = **15** |
+| **K-means** | [kmeans.ipynb](./notebooks/10-kmeans.ipynb) | Adjusted Rand Index (ARI) | **0.9342** |
+| **FFuzzy C-Means** | [fcm.ipynb](./notebooks/11-fcm.ipynb) | Centers / Iterations | Centers ≈ `[[60.07, 30.89], [24.51, 9.80]]`; Iter = **15** |
 
 > *Notes:* K-means includes the confusion matrix and decision region visualization.  
 > FCM includes fuzzy membership heatmaps.
