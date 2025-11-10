@@ -239,7 +239,7 @@ def plt_cmatrix(
     *,
     cm: Optional[np.ndarray] = None,
     labels: Optional[Iterable[str]] = None,
-    normalize: Optional[str] = "true",
+    normalize: Optional[str] = None,
     title: str = "Confusion Matrix",
     figsize: Tuple[int, int] = (5, 4),
     save_path: Optional[str] = None,
