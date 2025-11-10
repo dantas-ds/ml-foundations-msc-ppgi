@@ -47,21 +47,22 @@ uv sync
 ### 🌀 Unsupervised Models
 | Model | Notebook | Primary Metric(s) | Value |
 |:--|:--|:--|:--|
-| **K-means** | [kmeans.ipynb](./notebooks/10-kmeans.ipynb) | Adjusted Rand Index (ARI) | **0.9342** |
+| ⭐️ **K-means** | [kmeans.ipynb](./notebooks/10-kmeans.ipynb) | Adjusted Rand Index (ARI) | **0.9342** |
 | **FCM (Fuzzy C-Means)** | [fcm.ipynb](./notebooks/11-fcm.ipynb) | Centers / Iterations | Centers ≈ `[[60.07, 30.89], [24.51, 9.80]]`; Iter = **15** |
 
 > *Notes:* K-means includes the confusion matrix and decision region visualization.  
 > FCM includes fuzzy membership heatmaps.
+
 ---
 
 ### ✅ Supervised Models
 | Model | Notebook | Accuracy | Precision | Recall | F1 |
 |:--|:--|--:|--:|--:|--:|
+| ⭐️ **Artificial Neural Network (ANN)** | [ann.ipynb](./notebooks/21-ann.ipynb) | **1.0000** | **1.0000** | **1.0000** | **1.0000** |
 | **Logistic Regression** | [logreg.ipynb](./notebooks/20-logreg.ipynb) | **0.9833** | **0.9677** | **1.0000** | **0.9836** |
-| **Artificial Neural Network (ANN)** | [ann.ipynb](./notebooks/21-ann.ipynb) | **1.0000** | **1.0000** | **1.0000** | **1.0000** |
-| **SVM (RBF)** | [svm.ipynb](./notebooks/22-svm.ipynb) | **0.9833** | **0.9677** | **1.0000** | **0.9836** |
-| **Decision Tree** | [tree.ipynb](./notebooks/23-tree.ipynb) | **0.9500** | **0.9655** | **0.9333** | **0.9492** |
+| **SVM** | [svm.ipynb](./notebooks/22-svm.ipynb) | **0.9833** | **0.9677** | **1.0000** | **0.9836** |
 | **K-NN (best k = 3)** | [knn.ipynb](./notebooks/24-knn.ipynb) | **0.9833** | **0.9677** | **1.0000** | **0.9836** |
+| **Decision Tree** | [tree.ipynb](./notebooks/23-tree.ipynb) | **0.9500** | **0.9655** | **0.9333** | **0.9492** |
 
 > *Notes:* Metrics refer to the **test split (20%)**. Each notebook includes the confusion matrix and decision boundary visualization.
 
