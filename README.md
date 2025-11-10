@@ -25,12 +25,6 @@ ML/
 
 ---
 
-## 🧩 Features
-- Synthetic dataset generation — bivariate Gaussian distributions
-- Modular architecture for reproducible ML tasks
-
----
-
 ## ⚙️ Setup
 ```bash
 uv sync
@@ -66,6 +60,12 @@ uv sync
 
 > *Notes:* K-means includes the confusion matrix and decision region visualization.  
 > FCM includes fuzzy membership heatmaps.
+
+---
+
+## 🧩 Features
+- Synthetic dataset generation — bivariate Gaussian distributions
+- Modular architecture for reproducible ML tasks
 
 ---
 
