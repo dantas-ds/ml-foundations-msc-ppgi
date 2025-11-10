@@ -2,6 +2,49 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from sklearn.tree import plot_tree, export_text
+from typing import Optional, Tuple, Iterable, Dict, Any
+from sklearn.metrics import confusion_matrix as sk_confusion_matrix
+
+
+def _mesh_2d(X: np.ndarray, pad: float = 1.0, n: int = 400) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    x_min, x_max = X[:, 0].min() - pad, X[:, 0].max() + pad
+    y_min, y_max = X[:, 1].min() - pad, X[:, 1].max() + pad
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, n), np.linspace(y_min, y_max, n))
+    grid = np.c_[xx.ravel(), yy.ravel()]
+    return xx, yy, grid
+
+
+def _class_palette(n: int) -> np.ndarray:
+    return plt.cm.Set2(np.linspace(0, 1, n))
+
+
+def _is_continuous_model(model) -> bool:
+    return hasattr(model, "predict_proba") or hasattr(model,
+                                                      "decision_function")
+
+
+def _continuous_score(model, grid: np.ndarray) -> np.ndarray:
+    if hasattr(model, "predict_proba"):
+        z = model.predict_proba(grid)[:, 1]
+    else:
+        z = model.decision_function(grid)
+        z = (z - z.min()) / (z.max() - z.min() + 1e-12)
+
+    return z
+
+
+def _map_clusters_to_labels(y_true: np.ndarray,
+                            y_pred: np.ndarray) -> np.ndarray:
+
+    mapping: Dict[Any, Any] = {}
+    for c in np.unique(y_pred):
+        m = (y_pred == c)
+        if np.any(m):
+            mapping[c] = np.bincount(y_true[m]).argmax()
+
+    return np.vectorize(lambda z: mapping[z])(y_pred)
+
 
 def scatter_data(
     X: np.ndarray,
@@ -10,205 +53,82 @@ def scatter_data(
     title: str = "Dataset Scatter",
     show_ellipses: bool = True,
     alpha: float = 0.85,
-    figsize: tuple[int, int] = (7, 5),
-    save_path: str | None = None,
+    figsize: Tuple[int, int] = (7, 5),
+    save_path: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,
 ):
-    """
-    Scatter plot for labeled datasets with optional Gaussian ellipses.
-    """
 
     classes = np.unique(y)
-    colors = plt.cm.Set2(np.linspace(0, 1, len(classes)))
+    colors = _class_palette(len(classes))
 
-    fig, ax = plt.subplots(figsize=figsize)
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
 
     for i, cls in enumerate(classes):
-        mask = y == cls
-        ax.scatter(X[mask, 0], X[mask, 1],
-                   s=40, alpha=alpha,
-                   color=colors[i],
-                   label=f"Class {cls}")
+        m = (y == cls)
+        ax.scatter(X[m, 0], X[m, 1], s=40, alpha=alpha, color=colors[i], label=f"Class {cls}")
 
-        if show_ellipses:
-            mx, my = X[mask, 0].mean(), X[mask, 1].mean()
-            sx, sy = X[mask, 0].std(), X[mask, 1].std()
-            t = np.linspace(0, 2 * np.pi, 200)
-            xe = mx + sx * np.cos(t)
-            ye = my + sy * np.sin(t)
+        if show_ellipses and m.any():
+            mx, my = X[m, 0].mean(), X[m, 1].mean()
+            sx, sy = X[m, 0].std(), X[m, 1].std()
+            t = np.linspace(0, 2 * np.pi, 240)
+            xe, ye = mx + sx * np.cos(t), my + sy * np.sin(t)
             ax.plot(xe, ye, color=colors[i], lw=2)
 
     ax.set_title(title, fontsize=14, loc="left")
-    ax.set_xlabel("x₁")
-    ax.set_ylabel("x₂")
-    ax.legend()
-    ax.grid(alpha=0.3)
+    ax.set_xlabel("x₁"); ax.set_ylabel("x₂")
+    ax.legend(); ax.grid(alpha=0.3)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-    else:
+        (fig or ax.figure).savefig(save_path, dpi=300, bbox_inches="tight")
+    elif fig is not None:
         plt.show()
 
-    return fig, ax
+    return (fig or ax.figure), ax
 
 
-def scatter_clusters(
-    X, y_pred, model, *,
-    title="K-means Clusters + Boundaries",
-    alpha=0.85, figsize=(7, 5), save_path=None
-):
-    clusters = np.unique(y_pred)
-    colors = plt.cm.tab10(np.linspace(0, 1, len(clusters)))
-
-    pad = 1.0
-
-    x_min, x_max = X[:, 0].min() - pad, X[:, 0].max() + pad
-    y_min, y_max = X[:, 1].min() - pad, X[:, 1].max() + pad
-
-    xx, yy = np.meshgrid(
-        np.linspace(x_min, x_max, 400),
-        np.linspace(y_min, y_max, 400),
-    )
-
-    Z = model.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
-
-    fig, ax = plt.subplots(figsize=figsize)
-    ax.contourf(xx, yy, Z, alpha=0.15, levels=len(clusters), cmap=plt.cm.tab10)
-
-    for i, c in enumerate(clusters):
-        m = y_pred == c
-        ax.scatter(X[m, 0], X[m, 1], s=40, alpha=alpha, color=colors[i], label=f"Cluster {c}")
-
-    if hasattr(model, "cluster_centers_"):
-        C = model.cluster_centers_
-        ax.scatter(C[:, 0], C[:, 1], c="black", s=120, marker="x", linewidths=2, label="Centroids")
-
-    ax.set_title(title, fontsize=14, loc="left")
-    ax.set_xlabel("x₁")
-    ax.set_ylabel("x₂")
-
-    ax.legend()
-    ax.grid(alpha=0.3)
-
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-    else:
-        plt.show()
-
-    return fig, ax
-
-
-def scatter_cm(cm: np.ndarray,
-               labels=None,
-               title="Confusion Matrix",
-               save_path=None):
-
-    """
-    Pretty confusion matrix visualization.
-    """
-
-    fig, ax = plt.subplots(figsize=(5, 4))
-    sns.heatmap(cm,
-                annot=True,
-                fmt="d",
-                cmap="Blues",
-                cbar=False,
-                xticklabels=labels or ["Class 0", "Class 1"],
-                yticklabels=labels or ["Class 0", "Class 1"],
-                ax=ax)
-
-    ax.set_title(title, fontsize=14, loc="left")
-    ax.set_xlabel("Predicted")
-    ax.set_ylabel("True")
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-    else:
-        plt.show()
-
-    return fig, ax
-
-
-def scatter_fcm(
-    X: np.ndarray,
-    u_class1: np.ndarray,
-    *,
-    title: str = "Fuzzy membership to Class 1",
-    figsize: tuple[int, int] = (7, 5),
-    save_path: str | None = None,
-):
-    """
-    Color points by membership degree to class 1 (values in [0,1]).
-    """
-    u = np.clip(np.asarray(u_class1, dtype=float), 0.0, 1.0)
-
-    fig, ax = plt.subplots(figsize=figsize)
-    sc = ax.scatter(X[:, 0], X[:, 1], c=u, s=40, cmap="viridis", vmin=0.0, vmax=1.0)
-    cb = plt.colorbar(sc, ax=ax, pad=0.02)
-    cb.set_label("membership of class 1")
-
-    ax.set_title(title, fontsize=14, loc="left")
-    ax.set_xlabel("x₁")
-    ax.set_ylabel("x₂")
-    ax.grid(alpha=0.3)
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-    else:
-        plt.show()
-
-    return fig, ax
-
-
-def scatter_logreg(
+def plt_dboundary(
     model,
     X: np.ndarray,
     y: np.ndarray,
     *,
-    title: str = "Logistic Regression – Decision Boundary",
-    figsize: tuple[int, int] = (7, 5),
-    save_path: str | None = None,
+    title: str = "Decision Boundary",
+    figsize: Tuple[int, int] = (7, 5),
+    save_path: Optional[str] = None,
+    cmap_continuous: str = "coolwarm",
+    cmap_discrete: str = "Set3",
+    ax: Optional[plt.Axes] = None,
 ):
 
-    """
-    Plot decision boundary for a 2D classifier with predict_proba or decision_function.
-    """
+    xx, yy, grid = _mesh_2d(X)
 
-    pad = 1.0
-    x_min, x_max = X[:, 0].min() - pad, X[:, 0].max() + pad
-    y_min, y_max = X[:, 1].min() - pad, X[:, 1].max() + pad
-    xx, yy = np.meshgrid(
-        np.linspace(x_min, x_max, 400),
-        np.linspace(y_min, y_max, 400),
-    )
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
 
-    grid = np.c_[xx.ravel(), yy.ravel()]
+    if _is_continuous_model(model):
+        Z = _continuous_score(model, grid).reshape(xx.shape)
+        cs = ax.contourf(xx, yy, Z, levels=50,
+                         alpha=0.25, cmap=cmap_continuous)
 
-    if hasattr(model, "predict_proba"):
-        Z = model.predict_proba(grid)[:, 1]
-    elif hasattr(model, "decision_function"):
-        Z = model.decision_function(grid)
-        Z = (Z - Z.min()) / (Z.max() - Z.min() + 1e-12)
+        (fig or ax.figure).colorbar(cs, ax=ax,
+                                    pad=0.02).set_label("P(class=1) / score")
+
+        ax.contour(xx, yy, Z, levels=[0.5], colors="black", linewidths=2)
+
     else:
-        Z = model.predict(grid)
-
-    Z = Z.reshape(xx.shape)
-
-    fig, ax = plt.subplots(figsize=figsize)
-    cs = ax.contourf(xx, yy, Z, levels=50, alpha=0.25, cmap="RdBu")
-    cbar = fig.colorbar(cs, ax=ax, pad=0.02)
-    cbar.set_label("P(class=1)")
-
-    ax.contour(xx, yy, Z, levels=[0.5], colors="k", linewidths=2)
+        Z = model.predict(grid).astype(float).reshape(xx.shape)
+        levels = np.arange(-0.5, Z.max() + 1.5, 1)
+        ax.contourf(xx, yy, Z, levels=levels, alpha=0.25, cmap=cmap_discrete)
+        ax.contour(xx, yy, Z, levels=np.arange(0.5, Z.max() + 0.5, 1), colors="black", linewidths=1)
 
     classes = np.unique(y)
-    colors = plt.cm.Set2(np.linspace(0, 1, len(classes)))
+    colors = _class_palette(len(classes))
+
     for i, cls in enumerate(classes):
-        m = y == cls
+        m = (y == cls)
         ax.scatter(X[m, 0], X[m, 1], s=40, color=colors[i], label=f"Class {cls}")
 
     ax.set_title(title, fontsize=14, loc="left")
@@ -217,87 +137,211 @@ def scatter_logreg(
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-    else:
+        (fig or ax.figure).savefig(save_path, dpi=300, bbox_inches="tight")
+    elif fig is not None:
         plt.show()
 
-    return fig, ax
+    return (fig or ax.figure), ax
 
 
-def scatter_mlp(
-    model,
+def plt_clusters(
     X: np.ndarray,
-    y: np.ndarray,
+    y_pred: np.ndarray,
+    model,
     *,
-    title: str = " – Decision Boundary",
-    figsize: tuple[int, int] = (7, 5),
-    save_path: str | None = None,
+    y_true: Optional[np.ndarray] = None,
+    title: str = "K-means (Clusters + Boundary)",
+    alpha: float = 0.9,
+    figsize: Tuple[int, int] = (7, 5),
+    save_path: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,
 ):
-    """
-    Plot decision boundary for a trained MLP classifier in 2D space.
 
-    Parameters
-    ----------
-    model : trained sklearn.pipeline.Pipeline or MLPClassifier
-        The model must implement predict_proba() or decision_function().
-    X : np.ndarray, shape (n_samples, 2)
-        Input features.
-    y : np.ndarray, shape (n_samples,)
-        True labels.
-    title : str
-        Plot title.
-    figsize : tuple[int, int]
-        Figure size.
-    save_path : str | None
-        Optional path to save the figure.
-    """
+    clusters = np.unique(y_pred)
+    colors = plt.cm.Dark2(np.linspace(0, 1, len(clusters)))
+    markers = ["*", "^", "s", "P", "X", "D"]
 
-    pad = 1.0
-    x_min, x_max = X[:, 0].min() - pad, X[:, 0].max() + pad
-    y_min, y_max = X[:, 1].min() - pad, X[:, 1].max() + pad
+    xx, yy, grid = _mesh_2d(X)
+    Z = model.predict(grid).reshape(xx.shape)
 
-    xx, yy = np.meshgrid(
-        np.linspace(x_min, x_max, 400),
-        np.linspace(y_min, y_max, 400),
-    )
-    grid = np.c_[xx.ravel(), yy.ravel()]
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
 
-    # Predict probabilities (MLPClassifier supports this)
-    if hasattr(model, "predict_proba"):
-        Z = model.predict_proba(grid)[:, 1]
-    elif hasattr(model, "decision_function"):
-        Z = model.decision_function(grid)
-        Z = (Z - Z.min()) / (Z.max() - Z.min() + 1e-12)
-    else:
-        Z = model.predict(grid)
+    levels = np.arange(-0.5, Z.max() + 1.5, 1)
+    ax.contourf(xx, yy, Z, levels=levels, alpha=0.18, cmap="Set1")
+    # ax.contour(xx, yy, Z, levels=np.arange(0.5, Z.max() + 0.5, 1), colors="black", linewidths=1)
+    ax.contour(xx, yy, Z, levels=np.arange(0.5, Z.max()+0.5, 1), 
+               colors="black", linewidths=1.5, linestyles="--")
 
-    Z = Z.reshape(xx.shape)
+    for i, c in enumerate(clusters):
+        m = (y_pred == c)
+        ax.scatter(X[m, 0], X[m, 1], s=70, alpha=alpha, color=colors[i], marker=markers[i % len(markers)], label=f"Cluster {c}")
 
-    fig, ax = plt.subplots(figsize=figsize)
-    cs = ax.contourf(xx, yy, Z, levels=50, alpha=0.25, cmap="coolwarm")
-    cbar = fig.colorbar(cs, ax=ax, pad=0.02)
-    cbar.set_label("P(class=1)")
+    if hasattr(model, "cluster_centers_"):
+        C = model.cluster_centers_
+        ax.scatter(C[:, 0], C[:, 1], c="black", s=140, marker="x", linewidths=2, label="Centroids")
 
-    # Decision contour (probability = 0.5)
-    ax.contour(xx, yy, Z, levels=[0.5], colors="black", linewidths=2)
-
-    # Plot data points
-    classes = np.unique(y)
-    colors = plt.cm.Set2(np.linspace(0, 1, len(classes)))
-    for i, cls in enumerate(classes):
-        m = y == cls
-        ax.scatter(X[m, 0], X[m, 1], s=40, color=colors[i], label=f"Class {cls}")
+    if y_true is not None:
+        y_map = _map_clusters_to_labels(y_true, y_pred)
+        mis = (y_true != y_map)
+        if np.any(mis):
+            ax.scatter(X[mis, 0], X[mis, 1], facecolors="none", edgecolors="red", s=130, linewidths=1.2, label="Misclassified")
 
     ax.set_title(title, fontsize=14, loc="left")
-    ax.set_xlabel("x₁")
-    ax.set_ylabel("x₂")
-    ax.legend()
+    ax.set_xlabel("x₁"); ax.set_ylabel("x₂")
+    ax.legend(); ax.grid(alpha=0.3)
+    plt.tight_layout()
+
+    if save_path:
+        (fig or ax.figure).savefig(save_path, dpi=300, bbox_inches="tight")
+    elif fig is not None:
+        plt.show()
+
+    return (fig or ax.figure), ax
+
+
+def plt_fcm(
+    X: np.ndarray,
+    u_class1: np.ndarray,
+    *,
+    title: str = "FCM: membership to class 1",
+    figsize: Tuple[int, int] = (7, 5),
+    save_path: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,
+):
+
+    u = np.clip(np.asarray(u_class1, dtype=float), 0.0, 1.0)
+
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+
+    sc = ax.scatter(X[:, 0], X[:, 1], c=u, s=40, cmap="viridis", vmin=0.0, vmax=1.0)
+    (fig or ax.figure).colorbar(sc, ax=ax, pad=0.02).set_label("membership of class 1")
+
+    ax.set_title(title, fontsize=14, loc="left")
+    ax.set_xlabel("x₁"); ax.set_ylabel("x₂")
     ax.grid(alpha=0.3)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+        (fig or ax.figure).savefig(save_path, dpi=300, bbox_inches="tight")
+    elif fig is not None:
+        plt.show()
+
+    return (fig or ax.figure), ax
+
+
+def plt_cmatrix(
+    y_true: Optional[np.ndarray] = None,
+    y_pred: Optional[np.ndarray] = None,
+    *,
+    cm: Optional[np.ndarray] = None,
+    labels: Optional[Iterable[str]] = None,
+    normalize: Optional[str] = "true",
+    title: str = "Confusion Matrix",
+    figsize: Tuple[int, int] = (5, 4),
+    save_path: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,
+):
+
+    if cm is None:
+        if y_true is None or y_pred is None:
+            raise ValueError("Provide either cm=... or y_true and y_pred.")
+        cm = sk_confusion_matrix(y_true, y_pred)
+
+    cm = np.asarray(cm)
+
+    if labels is None:
+        n = cm.shape[0]
+        labels = [f"Class {i}" for i in range(n)]
+
+    if normalize is not None:
+
+        with np.errstate(all="ignore"):
+            if normalize == "true":
+                cm = cm / cm.sum(axis=1, keepdims=True)
+            elif normalize == "pred":
+                cm = cm / cm.sum(axis=0, keepdims=True)
+            elif normalize == "all":
+                cm = cm / cm.sum()
+            else:
+                raise ValueError('normalize must be None, "true", "pred", or "all"')
+
+        cm = np.nan_to_num(cm)
+
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+
+    fmt = ".2f" if normalize else "d"
+    sns.heatmap(cm, annot=True, fmt=fmt, cmap="Blues", cbar=False, xticklabels=labels, yticklabels=labels, ax=ax)
+
+    ax.set_title(title, fontsize=14, loc="left")
+    ax.set_xlabel("Predicted"); ax.set_ylabel("True")
+    plt.tight_layout()
+
+    if save_path:
+        (fig or ax.figure).savefig(save_path, dpi=300, bbox_inches="tight")
+
+    elif fig is not None:
+        plt.show()
+
+    return (fig or ax.figure), ax
+
+
+def plt_dtree(
+    model,
+    *,
+    feature_names=("x1", "x2"),
+    class_names=("Class 0", "Class 1"),
+    max_depth=None,
+    figsize=(10, 6),
+    dpi=120,
+    filled=True,
+    rounded=True,
+    impurity=False,
+    save_path=None,
+):
+    """
+    Visualize a sklearn DecisionTreeClassifier, handling Pipeline
+    transparently.
+    """
+
+    est = getattr(model, "named_steps", None)
+    clf = est["tree"] if isinstance(est, dict) and "tree" in est else model
+
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+    plot_tree(
+        clf,
+        feature_names=list(feature_names),
+        class_names=list(class_names),
+        max_depth=max_depth,
+        filled=filled,
+        rounded=rounded,
+        impurity=impurity,
+        fontsize=10,
+        ax=ax,
+    )
+
+    ax.set_title("> Decision Tree", loc="left", fontsize=14)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
     else:
         plt.show()
 
     return fig, ax
+
+
+def export_tree_text(model, *, feature_names=("x1", "x2")) -> str:
+    """
+    Return a plain-text representation of the trained decision tree rules.
+    """
+
+    est = getattr(model, "named_steps", None)
+    clf = est["tree"] if isinstance(est, dict) and "tree" in est else model
+
+    return export_text(clf, feature_names=list(feature_names))

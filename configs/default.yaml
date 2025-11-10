@@ -21,7 +21,7 @@ dataset:
   shuffle: true
   normalize: false
 
-model: # random parameters  for all models
+model: # random parameters for all models
   random_state: 42
   max_iter: 1000
   n_jobs: -1
@@ -44,8 +44,8 @@ algorithms:
     penalty: "l2"
     solver: "lbfgs"
 
-  mlp:
-    hidden_layer_sizes: [50, 30]
+  ann:
+    hidden_layer_sizes: [4, 4]
     activation: "relu"
     learning_rate_init: 0.001
 
